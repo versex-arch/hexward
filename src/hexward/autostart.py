@@ -47,14 +47,16 @@ def set_enabled(on: bool, name: str = APP_NAME) -> None:
     if IS_WINDOWS:
         import winreg
 
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
-            if on:
+        if on:
+            # A fresh Windows profile has no Run key yet, so create it when missing.
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
                 winreg.SetValueEx(key, name, 0, winreg.REG_SZ, command())
-            else:
-                try:
+        else:
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
                     winreg.DeleteValue(key, name)
-                except FileNotFoundError:
-                    pass
+            except FileNotFoundError:
+                pass  # no key or no value: already off
         return
     if sys.platform == "darwin":
         raise OSError("autostart is not supported on macOS yet")
