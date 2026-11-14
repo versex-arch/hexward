@@ -4,6 +4,7 @@
 
 First public version (0.1.0 was tagged but never released: its Windows build failed).
 
+- Running `hexward` without a command now opens the window.
 - Fixed: enabling "Start with Windows" failed on a profile that had no Run registry key yet.
 
 - Desktop app (`hexward gui`, or the desktop shortcut from `hexward shortcut`): sidebar layout with Overview (protection score), Checks, Findings, Live guard, Quarantine and Settings screens; interface in English, Russian, Kazakh, German, Spanish and Chinese. It is a local page shown in a chromeless Edge/Chrome window, served only on 127.0.0.1 behind a per-run token.

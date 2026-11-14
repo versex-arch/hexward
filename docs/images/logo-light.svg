@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 220" width="880" height="220" role="img" aria-label="hexward">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4adeaa"/><stop offset="1" stop-color="#10ac78"/></linearGradient></defs>
+  <path d="M110 22l76.200 44v88L110 198l-76.200-44V66z" fill="url(#g)"/>
+  <path d="M77 112l23 23 45-48" fill="none" stroke="#061c13" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="232" y="150" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" font-size="128" font-weight="700" letter-spacing="-4" fill="#17181c">hexward</text>
+</svg>

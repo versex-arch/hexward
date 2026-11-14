@@ -30,7 +30,10 @@ def build_parser() -> argparse.ArgumentParser:
     common = _common()
     parser = argparse.ArgumentParser(
         prog=APP_NAME,
-        description="Host security toolkit: log analysis, malware scan, system audit, AI-agent guard.")
+        description=f"{APP_NAME} v{__version__}: log analysis, malware scan, system audit, vulnerability scan, AI-agent guard.",
+        epilog="Without a command the window opens. Nothing is deleted or changed without you asking: "
+               "checks only report, and quarantine is restorable. "
+               "Exit codes: 0 = clean, 1 = findings at or above --fail-on (default: medium), 2 = error.")
     parser.add_argument("--version", action="version", version=f"{APP_NAME} {__version__}")
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
 
@@ -354,9 +357,8 @@ def main(argv: list[str] | None = None) -> int:
                 stream.reconfigure(errors="replace")
         except (AttributeError, ValueError, OSError):
             pass
-    if not args.command:
-        parser.print_help()
-        return EXIT_ERROR
+    if not args.command:  # plain `hexward` opens the app, like double-clicking it
+        args.command, args.background = "gui", False
     try:
         return COMMANDS[args.command](args)
     except KeyboardInterrupt:
