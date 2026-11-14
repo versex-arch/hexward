@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hexward</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root{
+  --bg:#0a0a0b; --side:#0d0d0f; --card:#111113; --card2:#161619; --line:#1f1f24; --line2:#2a2a31;
+  --fg:#ededef; --muted:#8b8b93; --dim:#5c5c66;
+  --accent:#34d399; --accent-ink:#04130c; --accent-soft:rgba(52,211,153,.12);
+  --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --crit:#f87171; --high:#fb923c; --med:#fbbf24; --low:#60a5fa; --info:#8b8b93;
+  --r:14px; --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);overflow:hidden;
+  font:14.5px/1.5 "Segoe UI Variable Text","Segoe UI Variable","Inter",system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(55% 38% at 72% -8%,rgba(52,211,153,.07),transparent 70%)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:left}
+svg.i{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+.shell{position:relative;height:100%;display:grid;grid-template-columns:236px minmax(0,1fr)}
+.side{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px 14px}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 8px 20px;font:600 16px/1 "Segoe UI Variable Display","Inter",system-ui,sans-serif;letter-spacing:-.01em}
+.brand .mark{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:9px;color:var(--muted);transition:background .15s,color .15s}
+.nav button:hover{background:var(--card2);color:var(--fg)}
+.nav button.sel{background:var(--card2);color:var(--fg)}
+.nav button.sel svg{color:var(--accent)}
+.badge{margin-left:auto;min-width:20px;padding:0 6px;border-radius:99px;background:var(--line2);color:var(--fg);font-size:11.5px;line-height:19px;text-align:center;font-variant-numeric:tabular-nums}
+.badge.hot{background:rgba(248,113,113,.18);color:var(--bad)}
+.side .grow{flex:1}
+.gstat{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;border:1px solid var(--line);color:var(--muted);font-size:12.5px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none}
+.gstat.on{color:var(--fg)} .gstat.on .dot{background:var(--ok);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
+@keyframes pulse{to{box-shadow:0 0 0 8px rgba(52,211,153,0)}}
+.ver{color:var(--dim);font-size:12px;padding:10px 10px 0}
+
+.main{min-width:0;display:flex;flex-direction:column;height:100%}
+.head{padding:26px 34px 6px}
+.head h1{font:600 24px/1.2 "Segoe UI Variable Display","Inter",system-ui,sans-serif;letter-spacing:-.02em}
+.head p{color:var(--muted);margin-top:4px}
+.body{flex:1;min-height:0;overflow:auto;padding:18px 34px 30px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.page{max-width:1120px;display:flex;flex-direction:column;gap:14px;animation:fade .3s var(--ease)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+.status{display:flex;align-items:center;gap:26px;padding:26px}
+.ring{position:relative;flex:none;width:148px;height:148px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .track{stroke:var(--line)}
+.ring .arc{stroke:var(--st,var(--dim));stroke-linecap:round;transition:stroke-dashoffset 1s var(--ease),stroke .4s}
+.ring.busy svg{animation:spin 1.2s linear infinite}
+@keyframes spin{to{transform:rotate(270deg)}}
+.ring .num{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring b{display:block;font:600 40px/1 "Segoe UI Variable Display","Inter",system-ui,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ring span{display:block;color:var(--muted);font-size:11px;margin-top:5px;letter-spacing:.07em;text-transform:uppercase}
+.status h2{font:600 22px/1.2 "Segoe UI Variable Display","Inter",system-ui,sans-serif;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.status h2::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--st,var(--dim))}
+.status p{color:var(--muted);margin:6px 0 16px;max-width:40ch}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;font-weight:600;background:var(--accent);color:var(--accent-ink);transition:filter .15s,transform .15s}
+.btn:hover{filter:brightness(1.1)} .btn:active{transform:scale(.98)}
+.btn[disabled]{background:var(--line2);color:var(--dim);cursor:default;filter:none;transform:none}
+.btn.sec{background:var(--card2);color:var(--fg);border:1px solid var(--line2);font-weight:500}
+.btn.sec:hover{border-color:var(--dim);filter:none}
+.btn.danger{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.25);font-weight:500}
+.btn.sm{padding:6px 12px;font-size:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.stat b{display:block;font:600 24px/1.1 "Segoe UI Variable Display","Inter",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.stat span{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12.5px;margin-top:3px}
+.stat span::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.duo .card{padding:6px 0}
+.duo h3{font-size:14px;font-weight:600;padding:10px 16px 8px}
+.prow{display:flex;align-items:center;gap:10px;width:100%;padding:9px 16px;transition:background .15s}
+button.prow:hover{background:var(--card2)}
+.prow .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .lbl small{color:var(--dim);margin-left:8px}
+.state{font-size:12.5px;padding:1px 9px;border-radius:99px;border:1px solid var(--line2);color:var(--muted)}
+.state.good{color:var(--ok);border-color:rgba(52,211,153,.3);background:var(--accent-soft)}
+.state.bad{color:var(--bad);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08)}
+.arow{display:flex;align-items:center;gap:10px;padding:9px 16px}
+.arow .d{width:7px;height:7px;border-radius:50%;flex:none;background:var(--dim)}
+.arow .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow time{color:var(--dim);font-size:12.5px;flex:none}
+.sec-h{display:flex;align-items:center;gap:10px;margin-top:6px}
+.sec-h h3{font-size:14px;font-weight:600}
+.link{color:var(--muted);font-size:13px;margin-left:auto} .link:hover{color:var(--fg)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.check{display:flex;flex-direction:column;gap:6px;min-height:168px;transition:border-color .2s}
+.check:hover{border-color:var(--line2)}
+.check.running{border-color:var(--accent)}
+.ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--card2);border:1px solid var(--line);color:var(--fg);margin-bottom:6px}
+.check h3{font-size:15px;font-weight:600}
+.check p{color:var(--muted);font-size:13px}
+.check .foot{margin-top:auto;padding-top:12px;display:flex;align-items:center;gap:8px}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--dim);font-size:12px;margin-right:auto}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:99px;border:1px solid var(--line2);font-variant-numeric:tabular-nums}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.c-CRITICAL{color:var(--crit)} .c-HIGH{color:var(--high)} .c-MEDIUM{color:var(--med)} .c-LOW{color:var(--low)} .c-INFO{color:var(--info)} .c-ok{color:var(--ok)}
+
+.listcard{padding:0;overflow:hidden}
+.bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tab{padding:5px 11px;border-radius:8px;color:var(--muted);font-size:13px}
+.tab:hover{color:var(--fg)} .tab.sel{background:var(--card2);color:var(--fg)}
+.spacer{flex:1}
+a.btn{text-decoration:none}
+.row{border-bottom:1px solid var(--line)} .row:last-child{border-bottom:0}
+.row>button{width:100%;display:grid;grid-template-columns:112px minmax(0,1.3fr) minmax(0,1fr) 16px;gap:12px;align-items:center;padding:11px 16px;transition:background .15s}
+.row>button:hover{background:var(--card2)}
+.sev{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600}
+.sev::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.ttl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tgt{color:var(--muted);font:12.5px/1.4 "Cascadia Mono",Consolas,ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{color:var(--dim);transition:transform .25s var(--ease)}
+.row.open .chev{transform:rotate(90deg)}
+.det{display:none;padding:2px 16px 16px 140px;color:var(--muted);font-size:13.5px}
+.row.open .det{display:block}
+.det h4{color:var(--dim);font-size:11px;letter-spacing:.07em;text-transform:uppercase;margin:10px 0 3px;font-weight:600}
+.det pre{white-space:pre-wrap;word-break:break-word;color:var(--fg);font:12.5px/1.5 "Cascadia Mono",Consolas,ui-monospace,monospace}
+.det .adv{color:var(--fg)} .det .btn{margin-top:12px}
+.note{padding:9px 16px;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line)}
+.empty{padding:54px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:16px;font-weight:600;margin-bottom:4px}
+.qrow{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)} .qrow:last-child{border-bottom:0}
+.qrow .info{min-width:0;flex:1} .qrow .info div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .sub{color:var(--muted);font-size:12.5px}
+
+.gcard{display:flex;align-items:center;gap:16px}
+.gcard .txt{flex:1} .gcard h3{font-size:15px;font-weight:600} .gcard p{color:var(--muted);font-size:13px;margin-top:2px}
+.switch{width:44px;height:25px;border-radius:99px;background:var(--line2);position:relative;transition:background .2s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:transform .25s var(--ease)}
+.switch.on{background:var(--accent)} .switch.on::after{transform:translateX(19px)}
+.langs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.lang{padding:8px 15px;border-radius:10px;border:1px solid var(--line2);color:var(--muted);transition:all .15s}
+.lang:hover{color:var(--fg);border-color:var(--dim)}
+.lang.sel{border-color:var(--accent);color:var(--fg);background:var(--accent-soft)}
+.small{color:var(--muted);font-size:13px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,24px);opacity:0;z-index:5;padding:10px 16px;border-radius:11px;
+  background:var(--card2);border:1px solid var(--line2);box-shadow:0 12px 40px rgba(0,0,0,.5);transition:all .3s var(--ease);max-width:70vw}
+.toast.show{transform:translate(-50%,0);opacity:1}
+@media (max-width:900px){
+  body{overflow:auto}.shell{grid-template-columns:1fr;height:auto}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;border-right:0;border-bottom:1px solid var(--line)}
+  .brand{padding:2px 8px}.nav{flex-direction:row;flex-wrap:wrap}.side .grow,.ver{display:none}
+  .main{height:auto}.cols,.duo{grid-template-columns:1fr}.status{flex-wrap:wrap}.head,.body{padding-left:18px;padding-right:18px}
+  .row>button{grid-template-columns:96px minmax(0,1fr) 16px}.tgt{display:none}.det{padding-left:16px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="mark"><svg class="i" viewBox="0 0 24 24" style="stroke-width:2.2"><path d="M12 2.500l8.200 4.750v9.500L12 21.500l-8.200-4.750v-9.500z"/><path d="M8.600 12.200l2.300 2.300 4.500-4.800"/></svg></span>hexward</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="grow"></div>
+    <div class="gstat" id="gstat"><span class="dot"></span><span id="gstatText"></span></div>
+    <div class="ver" id="ver"></div>
+  </aside>
+  <section class="main">
+    <header class="head"><h1 id="title"></h1><p id="subtitle"></p></header>
+    <div class="body"><div class="page" id="page"></div></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const LANGS = {en: "English", ru: "Русский", kk: "Қазақша", de: "Deutsch", es: "Español", zh: "中文"};
+const I18N = {
+en: {
+  nav: {overview: "Overview", checks: "Checks", findings: "Findings", guard: "Live guard", quarantine: "Quarantine", settings: "Settings"},
+  sub: {overview: "The state of this computer at a glance", checks: "Run a single check or all of them at once", findings: "Results of the checks you ran",
+        guard: "Get alerted when something rewrites sensitive files", quarantine: "Files isolated so they can no longer run", settings: "Language and information"},
+  sev: {CRITICAL: "Critical", HIGH: "High", MEDIUM: "Medium", LOW: "Low", INFO: "Info"},
+  task: {quick: "Quick check", harden: "Vulnerabilities", files: "Files", system: "System", ai: "AI agents", logs: "Logs", winlog: "Windows log", alerts: "Live guard"},
+  desc: {quick: "System audit, AI-agent audit and a scan of Downloads, Desktop and Temp", harden: "Weak system settings, account problems, outdated updates, browser hijacks", files: "Scan a folder for malware by signatures and heuristics",
+         system: "Autostart, security settings, processes, scheduled tasks, ports", ai: "Exposed model servers, risky agent configs, prompt injection in a project",
+         logs: "Brute force and web attacks in auth.log or an nginx/apache log", winlog: "Failed logons, new users, new services, cleared audit log"},
+  score: "score", idleTitle: "Not checked yet", idleText: "Run a quick check to see where this computer stands.",
+  okTitle: "You are protected", okText: "No threats found in the checks run so far.",
+  warnTitle: "Needs attention", warnText: "Some settings or files deserve a look.",
+  badTitle: "Threats detected", badText: "Open the findings and deal with the red ones first.",
+  busyTitle: "Checking…", run: "Run", running: "Running…", never: "Not run yet", clean: "Clean", lastRun: "Last run: {}",
+  recent: "Most important findings", showAll: "Show all", export: "Export JSON",
+  emptyB: "Nothing here yet", emptyT: "Results of the checks you run will appear here.", cleanB: "All clear", cleanT: "This check found nothing.",
+  where: "Where", evidence: "Evidence", advice: "What to do", rule: "Rule", toQuarantine: "Move to quarantine",
+  qConfirm: "Move this file to quarantine?", qDone: "Moved to quarantine", pickPath: "Path:",
+  wsHint: "Pick a project folder to scan it for prompt injection (Cancel = configs and ports only)",
+  error: "Error", unsupported: "Windows only", alert: "Live guard: change detected", done: "{}: {} finding(s)",
+  guardH: "Live guard", guardD: "Watches agent and MCP configs, shell profiles, SSH keys, hosts, autostart entries and open ports.",
+  guardOn: "Live guard on", guardOff: "Live guard off", watching: "Watching {} files", accept: "Trust current state", accepted: "Current state saved as trusted",
+  acceptD: "After changes you made yourself, save the current state as the new trusted baseline.", events: "Events", noEvents: "No changes detected", noEventsT: "Alerts appear here while the guard is on.",
+  qEmptyB: "Quarantine is empty", qEmptyT: "Files matched by a malware signature can be moved here.", restore: "Restore", del: "Delete",
+  delConfirm: "Delete this file permanently? This cannot be undone.", restored: "Restored to {}", deleted: "Deleted",
+  shield: "While it is on, new files in Downloads and on the Desktop and newly connected USB drives are scanned at once.",  canaryH: "Ransomware canaries",  canaryD: "Hidden decoy documents in Documents and Pictures. If anything rewrites or deletes them, you get a critical alert.",  ignore: "Ignore this finding",  ignoredDone: "Finding hidden",  ignoredH: "Ignored findings",  ignoredN: "Hidden findings: {}",  clearIgnored: "Show them again",
+  protection: "Protection",  pAv: "Real-time antivirus (Defender)",  pFw: "Firewall",  pGuard: "Live guard",  pCanary: "Ransomware canaries",  pAuto: "Start with Windows",  pSigs: "Malware signatures",  on: "On",  off: "Off",  unknown: "Unknown",  activity: "Recent activity",  noActivity: "Nothing has happened yet",  actAlert: "Live guard: {} change(s)",  autoH: "Start with Windows",  autoD: "hexward starts in the background when you sign in and keeps the live guard on. Alerts arrive as Windows notifications; closing this window does not stop protection.",  quitH: "Exit hexward",  quitD: "Stops background protection until the next start.",  quit: "Exit",  stopped: "hexward has been stopped. You can close this window.",
+  language: "Language", langNote: "Finding texts and advice stay in English for now.", about: "About",
+  aboutT: "hexward is an open-source security toolkit. It complements a real-time antivirus such as Microsoft Defender and does not replace it."
+},
+ru: {
+  nav: {overview: "Обзор", checks: "Проверки", findings: "Находки", guard: "Слежение", quarantine: "Карантин", settings: "Настройки"},
+  sub: {overview: "Состояние компьютера с одного взгляда", checks: "Запустите одну проверку или все сразу", findings: "Результаты запущенных проверок",
+        guard: "Сообщает, когда что-то меняет важные файлы", quarantine: "Изолированные файлы, которые больше не могут запуститься", settings: "Язык и сведения"},
+  sev: {CRITICAL: "Критично", HIGH: "Высокий", MEDIUM: "Средний", LOW: "Низкий", INFO: "Инфо"},
+  task: {quick: "Быстрая проверка", harden: "Уязвимости", files: "Файлы", system: "Система", ai: "ИИ-агенты", logs: "Логи", winlog: "Журнал Windows", alerts: "Слежение"},
+  desc: {quick: "Аудит системы, аудит ИИ-агентов и проверка папок «Загрузки», «Рабочий стол» и Temp", harden: "Слабые настройки системы, проблемы учётных записей, старые обновления, подмена браузера", files: "Проверить папку на вредоносные файлы по сигнатурам и эвристике",
+         system: "Автозагрузка, настройки защиты, процессы, планировщик, порты", ai: "Открытые ИИ-серверы, опасные конфиги агентов, prompt injection в проекте",
+         logs: "Брутфорс и веб-атаки в auth.log или логе nginx/apache", winlog: "Неудачные входы, новые пользователи и службы, очистка журнала"},
+  score: "оценка", idleTitle: "Проверка не запускалась", idleText: "Запустите быструю проверку, чтобы увидеть состояние компьютера.",
+  okTitle: "Вы защищены", okText: "В выполненных проверках угроз не найдено.",
+  warnTitle: "Требует внимания", warnText: "Некоторые настройки или файлы стоит посмотреть.",
+  badTitle: "Обнаружены угрозы", badText: "Откройте находки и начните с красных.",
+  busyTitle: "Идёт проверка…", run: "Запустить", running: "Выполняется…", never: "Не запускалась", clean: "Чисто", lastRun: "Последний запуск: {}",
+  recent: "Самые важные находки", showAll: "Показать все", export: "Сохранить JSON",
+  emptyB: "Пока пусто", emptyT: "Здесь появятся результаты запущенных проверок.", cleanB: "Всё чисто", cleanT: "Эта проверка ничего не нашла.",
+  where: "Где", evidence: "Доказательства", advice: "Что делать", rule: "Правило", toQuarantine: "В карантин",
+  qConfirm: "Переместить файл в карантин?", qDone: "Файл в карантине", pickPath: "Путь:",
+  wsHint: "Выберите папку проекта для поиска prompt injection (Отмена = только конфиги и порты)",
+  error: "Ошибка", unsupported: "Только Windows", alert: "Слежение: обнаружено изменение", done: "{}: находок — {}",
+  guardH: "Слежение", guardD: "Следит за конфигами агентов и MCP, профилями оболочки, SSH-ключами, hosts, автозагрузкой и открытыми портами.",
+  guardOn: "Слежение включено", guardOff: "Слежение выключено", watching: "Под наблюдением файлов: {}", accept: "Доверять текущему состоянию", accepted: "Текущее состояние сохранено как доверенное",
+  acceptD: "После изменений, которые вы сделали сами, сохраните текущее состояние как новый эталон.", events: "События", noEvents: "Изменений не обнаружено", noEventsT: "Пока слежение включено, тревоги появляются здесь.",
+  qEmptyB: "Карантин пуст", qEmptyT: "Сюда можно переместить файлы, найденные по сигнатуре.", restore: "Восстановить", del: "Удалить",
+  delConfirm: "Удалить файл навсегда? Это действие нельзя отменить.", restored: "Восстановлено: {}", deleted: "Удалено",
+  shield: "Пока оно включено, новые файлы в «Загрузках» и на рабочем столе и подключённые флешки проверяются сразу.",  canaryH: "Ловушки для шифровальщиков",  canaryD: "Скрытые документы-приманки в «Документах» и «Изображениях». Если что-то их перезапишет или удалит, придёт критическая тревога.",  ignore: "Игнорировать эту находку",  ignoredDone: "Находка скрыта",  ignoredH: "Игнорируемые находки",  ignoredN: "Скрыто находок: {}",  clearIgnored: "Показывать снова",
+  protection: "Защита",  pAv: "Антивирус в реальном времени (Defender)",  pFw: "Брандмауэр",  pGuard: "Слежение",  pCanary: "Ловушки для шифровальщиков",  pAuto: "Запуск вместе с Windows",  pSigs: "Сигнатуры вредоносных файлов",  on: "Вкл",  off: "Выкл",  unknown: "Неизвестно",  activity: "Последние события",  noActivity: "Пока ничего не происходило",  actAlert: "Слежение: изменений — {}",  autoH: "Запуск вместе с Windows",  autoD: "hexward запускается в фоне при входе в систему и держит слежение включённым. Тревоги приходят уведомлениями Windows; закрытие окна не останавливает защиту.",  quitH: "Выйти из hexward",  quitD: "Останавливает фоновую защиту до следующего запуска.",  quit: "Выйти",  stopped: "hexward остановлен. Окно можно закрыть.",
+  language: "Язык", langNote: "Тексты находок и советы пока остаются на английском.", about: "О программе",
+  aboutT: "hexward — набор инструментов защиты с открытым кодом. Он дополняет антивирус с защитой в реальном времени, например Microsoft Defender, и не заменяет его."
+},
+kk: {
+  nav: {overview: "Шолу", checks: "Тексерулер", findings: "Табылғандар", guard: "Бақылау", quarantine: "Карантин", settings: "Баптаулар"},
+  sub: {overview: "Компьютердің күйі бір қарағанда", checks: "Бір тексеруді немесе барлығын бірден іске қосыңыз", findings: "Іске қосылған тексерулердің нәтижелері",
+        guard: "Маңызды файлдар өзгергенде хабарлайды", quarantine: "Оқшауланған, енді іске қосыла алмайтын файлдар", settings: "Тіл және мәліметтер"},
+  sev: {CRITICAL: "Аса қауіпті", HIGH: "Жоғары", MEDIUM: "Орташа", LOW: "Төмен", INFO: "Ақпарат"},
+  task: {quick: "Жылдам тексеру", harden: "Осалдықтар", files: "Файлдар", system: "Жүйе", ai: "ЖИ агенттері", logs: "Журналдар", winlog: "Windows журналы", alerts: "Бақылау"},
+  desc: {quick: "Жүйе аудиті, ЖИ агенттерінің аудиті және «Жүктеулер», «Жұмыс үстелі», Temp қалталарын тексеру", harden: "Әлсіз жүйе баптаулары, тіркелгі мәселелері, ескі жаңартулар, браузерді басып алу", files: "Қалтаны сигнатуралар мен эвристика бойынша зиянды файлдарға тексеру",
+         system: "Автожүктеу, қорғаныс баптаулары, процестер, жоспарлағыш, порттар", ai: "Ашық ЖИ серверлері, қауіпті агент баптаулары, жобадағы prompt injection",
+         logs: "auth.log немесе nginx/apache журналындағы брутфорс пен веб-шабуылдар", winlog: "Сәтсіз кірулер, жаңа пайдаланушылар мен қызметтер, журналды тазалау"},
+  score: "баға", idleTitle: "Тексеру іске қосылмаған", idleText: "Компьютердің күйін көру үшін жылдам тексеруді іске қосыңыз.",
+  okTitle: "Сіз қорғалғансыз", okText: "Орындалған тексерулерде қауіп табылмады.",
+  warnTitle: "Назар аударуды қажет етеді", warnText: "Кейбір баптауларды немесе файлдарды қарап шыққан жөн.",
+  badTitle: "Қауіптер анықталды", badText: "Табылғандарды ашып, қызылдарынан бастаңыз.",
+  busyTitle: "Тексеру жүріп жатыр…", run: "Іске қосу", running: "Орындалуда…", never: "Іске қосылмаған", clean: "Таза", lastRun: "Соңғы іске қосу: {}",
+  recent: "Ең маңызды табылғандар", showAll: "Барлығын көрсету", export: "JSON сақтау",
+  emptyB: "Әзірге бос", emptyT: "Мұнда іске қосылған тексерулердің нәтижелері шығады.", cleanB: "Бәрі таза", cleanT: "Бұл тексеру ештеңе таппады.",
+  where: "Қайда", evidence: "Дәлелдер", advice: "Не істеу керек", rule: "Ереже", toQuarantine: "Карантинге",
+  qConfirm: "Файлды карантинге жылжыту керек пе?", qDone: "Файл карантинде", pickPath: "Жол:",
+  wsHint: "Prompt injection іздеу үшін жоба қалтасын таңдаңыз (Болдырмау = тек баптаулар мен порттар)",
+  error: "Қате", unsupported: "Тек Windows", alert: "Бақылау: өзгеріс анықталды", done: "{}: табылғаны — {}",
+  guardH: "Бақылау", guardD: "Агент және MCP баптауларын, қабықша профильдерін, SSH кілттерін, hosts файлын, автожүктеуді және ашық порттарды бақылайды.",
+  guardOn: "Бақылау қосулы", guardOff: "Бақылау өшірулі", watching: "Бақылаудағы файлдар: {}", accept: "Ағымдағы күйге сену", accepted: "Ағымдағы күй сенімді ретінде сақталды",
+  acceptD: "Өзіңіз жасаған өзгерістерден кейін ағымдағы күйді жаңа эталон ретінде сақтаңыз.", events: "Оқиғалар", noEvents: "Өзгерістер анықталмады", noEventsT: "Бақылау қосулы кезде дабылдар осында шығады.",
+  qEmptyB: "Карантин бос", qEmptyT: "Сигнатура бойынша табылған файлдарды осында жылжытуға болады.", restore: "Қалпына келтіру", del: "Жою",
+  delConfirm: "Файлды біржола жою керек пе? Бұл әрекетті қайтару мүмкін емес.", restored: "Қалпына келтірілді: {}", deleted: "Жойылды",
+  shield: "Ол қосулы кезде «Жүктеулер» мен жұмыс үстеліндегі жаңа файлдар және қосылған USB дискілер бірден тексеріледі.",  canaryH: "Шифрлаушыларға арналған тұзақтар",  canaryD: "«Құжаттар» мен «Суреттер» қалталарындағы жасырын алдамшы құжаттар. Оларды бірдеңе қайта жазса немесе жойса, аса қауіпті дабыл келеді.",  ignore: "Бұл табылғанды елемеу",  ignoredDone: "Табылған жасырылды",  ignoredH: "Еленбейтін табылғандар",  ignoredN: "Жасырылған табылғандар: {}",  clearIgnored: "Қайта көрсету",
+  protection: "Қорғаныс",  pAv: "Нақты уақыттағы антивирус (Defender)",  pFw: "Брандмауэр",  pGuard: "Бақылау",  pCanary: "Шифрлаушыларға арналған тұзақтар",  pAuto: "Windows-пен бірге іске қосу",  pSigs: "Зиянды файл сигнатуралары",  on: "Қосулы",  off: "Өшірулі",  unknown: "Белгісіз",  activity: "Соңғы оқиғалар",  noActivity: "Әзірге ештеңе болған жоқ",  actAlert: "Бақылау: өзгерістер — {}",  autoH: "Windows-пен бірге іске қосу",  autoD: "hexward жүйеге кірген кезде фондық режимде іске қосылып, бақылауды қосулы ұстайды. Дабылдар Windows хабарландырулары ретінде келеді; терезені жабу қорғанысты тоқтатпайды.",  quitH: "hexward-тан шығу",  quitD: "Келесі іске қосуға дейін фондық қорғанысты тоқтатады.",  quit: "Шығу",  stopped: "hexward тоқтатылды. Терезені жабуға болады.",
+  language: "Тіл", langNote: "Табылғандардың мәтіні мен кеңестер әзірге ағылшын тілінде.", about: "Бағдарлама туралы",
+  aboutT: "hexward — ашық бастапқы коды бар қорғаныс құралдар жинағы. Ол Microsoft Defender сияқты нақты уақыттағы антивирусты толықтырады, бірақ оны алмастырмайды."
+},
+de: {
+  nav: {overview: "Übersicht", checks: "Prüfungen", findings: "Funde", guard: "Überwachung", quarantine: "Quarantäne", settings: "Einstellungen"},
+  sub: {overview: "Der Zustand dieses Computers auf einen Blick", checks: "Eine einzelne Prüfung oder alle auf einmal starten", findings: "Ergebnisse der ausgeführten Prüfungen",
+        guard: "Meldet, wenn etwas sensible Dateien verändert", quarantine: "Isolierte Dateien, die nicht mehr ausgeführt werden können", settings: "Sprache und Informationen"},
+  sev: {CRITICAL: "Kritisch", HIGH: "Hoch", MEDIUM: "Mittel", LOW: "Niedrig", INFO: "Info"},
+  task: {quick: "Schnellprüfung", harden: "Schwachstellen", files: "Dateien", system: "System", ai: "KI-Agenten", logs: "Logs", winlog: "Windows-Protokoll", alerts: "Überwachung"},
+  desc: {quick: "Systemaudit, KI-Agenten-Audit und Scan von Downloads, Desktop und Temp", harden: "Schwache Systemeinstellungen, Kontoprobleme, veraltete Updates, Browser-Manipulation", files: "Einen Ordner mit Signaturen und Heuristik auf Schadsoftware prüfen",
+         system: "Autostart, Sicherheitseinstellungen, Prozesse, geplante Aufgaben, Ports", ai: "Offene Modellserver, riskante Agenten-Konfigurationen, Prompt Injection im Projekt",
+         logs: "Brute-Force- und Web-Angriffe in auth.log oder einem nginx/apache-Log", winlog: "Fehlgeschlagene Anmeldungen, neue Benutzer und Dienste, gelöschtes Protokoll"},
+  score: "Wert", idleTitle: "Noch nicht geprüft", idleText: "Starten Sie eine Schnellprüfung, um den Zustand dieses Computers zu sehen.",
+  okTitle: "Sie sind geschützt", okText: "In den bisherigen Prüfungen wurden keine Bedrohungen gefunden.",
+  warnTitle: "Aufmerksamkeit nötig", warnText: "Einige Einstellungen oder Dateien sollten Sie sich ansehen.",
+  badTitle: "Bedrohungen erkannt", badText: "Öffnen Sie die Funde und beginnen Sie mit den roten.",
+  busyTitle: "Prüfung läuft…", run: "Starten", running: "Läuft…", never: "Noch nicht ausgeführt", clean: "Sauber", lastRun: "Letzter Lauf: {}",
+  recent: "Wichtigste Funde", showAll: "Alle anzeigen", export: "JSON exportieren",
+  emptyB: "Noch nichts vorhanden", emptyT: "Hier erscheinen die Ergebnisse der gestarteten Prüfungen.", cleanB: "Alles in Ordnung", cleanT: "Diese Prüfung hat nichts gefunden.",
+  where: "Wo", evidence: "Belege", advice: "Was zu tun ist", rule: "Regel", toQuarantine: "In Quarantäne verschieben",
+  qConfirm: "Diese Datei in die Quarantäne verschieben?", qDone: "In Quarantäne verschoben", pickPath: "Pfad:",
+  wsHint: "Projektordner für die Suche nach Prompt Injection wählen (Abbrechen = nur Konfigurationen und Ports)",
+  error: "Fehler", unsupported: "Nur Windows", alert: "Überwachung: Änderung erkannt", done: "{}: {} Fund(e)",
+  guardH: "Überwachung", guardD: "Überwacht Agenten- und MCP-Konfigurationen, Shell-Profile, SSH-Schlüssel, hosts, Autostart-Einträge und offene Ports.",
+  guardOn: "Überwachung aktiv", guardOff: "Überwachung aus", watching: "{} Dateien überwacht", accept: "Aktuellem Zustand vertrauen", accepted: "Aktueller Zustand als vertrauenswürdig gespeichert",
+  acceptD: "Nach eigenen Änderungen den aktuellen Zustand als neue Vertrauensbasis speichern.", events: "Ereignisse", noEvents: "Keine Änderungen erkannt", noEventsT: "Solange die Überwachung aktiv ist, erscheinen Warnungen hier.",
+  qEmptyB: "Die Quarantäne ist leer", qEmptyT: "Dateien mit Signaturtreffer können hierher verschoben werden.", restore: "Wiederherstellen", del: "Löschen",
+  delConfirm: "Diese Datei endgültig löschen? Das kann nicht rückgängig gemacht werden.", restored: "Wiederhergestellt: {}", deleted: "Gelöscht",
+  shield: "Solange sie aktiv ist, werden neue Dateien in Downloads und auf dem Desktop sowie neu angeschlossene USB-Laufwerke sofort geprüft.",  canaryH: "Ransomware-Köder",  canaryD: "Versteckte Köderdokumente in Dokumente und Bilder. Wenn etwas sie überschreibt oder löscht, erhalten Sie eine kritische Warnung.",  ignore: "Diesen Fund ignorieren",  ignoredDone: "Fund ausgeblendet",  ignoredH: "Ignorierte Funde",  ignoredN: "Ausgeblendete Funde: {}",  clearIgnored: "Wieder anzeigen",
+  protection: "Schutz",  pAv: "Echtzeit-Virenschutz (Defender)",  pFw: "Firewall",  pGuard: "Überwachung",  pCanary: "Ransomware-Köder",  pAuto: "Mit Windows starten",  pSigs: "Malware-Signaturen",  on: "An",  off: "Aus",  unknown: "Unbekannt",  activity: "Letzte Aktivitäten",  noActivity: "Noch ist nichts passiert",  actAlert: "Überwachung: {} Änderung(en)",  autoH: "Mit Windows starten",  autoD: "hexward startet bei der Anmeldung im Hintergrund und hält die Überwachung aktiv. Warnungen kommen als Windows-Benachrichtigungen; das Schließen dieses Fensters beendet den Schutz nicht.",  quitH: "hexward beenden",  quitD: "Beendet den Hintergrundschutz bis zum nächsten Start.",  quit: "Beenden",  stopped: "hexward wurde beendet. Sie können dieses Fenster schließen.",
+  language: "Sprache", langNote: "Fundtexte und Hinweise bleiben vorerst auf Englisch.", about: "Über",
+  aboutT: "hexward ist ein quelloffenes Sicherheitswerkzeug. Es ergänzt einen Echtzeit-Virenschutz wie Microsoft Defender und ersetzt ihn nicht."
+},
+es: {
+  nav: {overview: "Resumen", checks: "Comprobaciones", findings: "Hallazgos", guard: "Vigilancia", quarantine: "Cuarentena", settings: "Ajustes"},
+  sub: {overview: "El estado de este equipo de un vistazo", checks: "Ejecute una comprobación o todas a la vez", findings: "Resultados de las comprobaciones ejecutadas",
+        guard: "Avisa cuando algo modifica archivos sensibles", quarantine: "Archivos aislados que ya no pueden ejecutarse", settings: "Idioma e información"},
+  sev: {CRITICAL: "Crítico", HIGH: "Alto", MEDIUM: "Medio", LOW: "Bajo", INFO: "Info"},
+  task: {quick: "Comprobación rápida", harden: "Vulnerabilidades", files: "Archivos", system: "Sistema", ai: "Agentes de IA", logs: "Registros", winlog: "Registro de Windows", alerts: "Vigilancia"},
+  desc: {quick: "Auditoría del sistema, auditoría de agentes de IA y análisis de Descargas, Escritorio y Temp", harden: "Ajustes débiles del sistema, problemas de cuentas, actualizaciones antiguas, secuestro del navegador", files: "Analizar una carpeta en busca de malware con firmas y heurística",
+         system: "Inicio automático, ajustes de seguridad, procesos, tareas programadas, puertos", ai: "Servidores de modelos expuestos, configuraciones de agentes arriesgadas, prompt injection en un proyecto",
+         logs: "Fuerza bruta y ataques web en auth.log o un registro de nginx/apache", winlog: "Inicios de sesión fallidos, usuarios y servicios nuevos, registro borrado"},
+  score: "puntos", idleTitle: "Aún sin comprobar", idleText: "Ejecute una comprobación rápida para ver el estado de este equipo.",
+  okTitle: "Está protegido", okText: "No se han encontrado amenazas en las comprobaciones realizadas.",
+  warnTitle: "Requiere atención", warnText: "Conviene revisar algunos ajustes o archivos.",
+  badTitle: "Amenazas detectadas", badText: "Abra los hallazgos y empiece por los rojos.",
+  busyTitle: "Comprobando…", run: "Ejecutar", running: "En curso…", never: "Sin ejecutar", clean: "Limpio", lastRun: "Última ejecución: {}",
+  recent: "Hallazgos más importantes", showAll: "Ver todos", export: "Exportar JSON",
+  emptyB: "Aún no hay nada", emptyT: "Aquí aparecerán los resultados de las comprobaciones.", cleanB: "Todo en orden", cleanT: "Esta comprobación no encontró nada.",
+  where: "Dónde", evidence: "Pruebas", advice: "Qué hacer", rule: "Regla", toQuarantine: "Mover a cuarentena",
+  qConfirm: "¿Mover este archivo a cuarentena?", qDone: "Movido a cuarentena", pickPath: "Ruta:",
+  wsHint: "Elija la carpeta del proyecto para buscar prompt injection (Cancelar = solo configuraciones y puertos)",
+  error: "Error", unsupported: "Solo Windows", alert: "Vigilancia: cambio detectado", done: "{}: {} hallazgo(s)",
+  guardH: "Vigilancia", guardD: "Vigila configuraciones de agentes y MCP, perfiles de shell, claves SSH, hosts, entradas de inicio y puertos abiertos.",
+  guardOn: "Vigilancia activa", guardOff: "Vigilancia desactivada", watching: "{} archivos vigilados", accept: "Confiar en el estado actual", accepted: "Estado actual guardado como de confianza",
+  acceptD: "Tras cambios hechos por usted, guarde el estado actual como nueva referencia de confianza.", events: "Eventos", noEvents: "No se detectaron cambios", noEventsT: "Mientras la vigilancia esté activa, las alertas aparecen aquí.",
+  qEmptyB: "La cuarentena está vacía", qEmptyT: "Aquí se pueden mover los archivos detectados por firma.", restore: "Restaurar", del: "Eliminar",
+  delConfirm: "¿Eliminar este archivo definitivamente? No se puede deshacer.", restored: "Restaurado en {}", deleted: "Eliminado",
+  shield: "Mientras está activa, los archivos nuevos en Descargas y en el Escritorio y las unidades USB recién conectadas se analizan al instante.",  canaryH: "Señuelos contra ransomware",  canaryD: "Documentos señuelo ocultos en Documentos e Imágenes. Si algo los reescribe o los borra, recibirá una alerta crítica.",  ignore: "Ignorar este hallazgo",  ignoredDone: "Hallazgo oculto",  ignoredH: "Hallazgos ignorados",  ignoredN: "Hallazgos ocultos: {}",  clearIgnored: "Mostrarlos de nuevo",
+  protection: "Protección",  pAv: "Antivirus en tiempo real (Defender)",  pFw: "Cortafuegos",  pGuard: "Vigilancia",  pCanary: "Señuelos contra ransomware",  pAuto: "Iniciar con Windows",  pSigs: "Firmas de malware",  on: "Activado",  off: "Desactivado",  unknown: "Desconocido",  activity: "Actividad reciente",  noActivity: "Todavía no ha ocurrido nada",  actAlert: "Vigilancia: {} cambio(s)",  autoH: "Iniciar con Windows",  autoD: "hexward se inicia en segundo plano al iniciar sesión y mantiene la vigilancia activa. Las alertas llegan como notificaciones de Windows; cerrar esta ventana no detiene la protección.",  quitH: "Salir de hexward",  quitD: "Detiene la protección en segundo plano hasta el próximo inicio.",  quit: "Salir",  stopped: "hexward se ha detenido. Puede cerrar esta ventana.",
+  language: "Idioma", langNote: "Los textos de los hallazgos y los consejos siguen en inglés por ahora.", about: "Acerca de",
+  aboutT: "hexward es un conjunto de herramientas de seguridad de código abierto. Complementa a un antivirus en tiempo real como Microsoft Defender y no lo sustituye."
+},
+zh: {
+  nav: {overview: "概览", checks: "检查", findings: "发现", guard: "实时监控", quarantine: "隔离区", settings: "设置"},
+  sub: {overview: "一眼了解这台电脑的状态", checks: "运行单项检查或一次全部运行", findings: "已运行检查的结果",
+        guard: "敏感文件被修改时发出提醒", quarantine: "已隔离、无法再运行的文件", settings: "语言与信息"},
+  sev: {CRITICAL: "严重", HIGH: "高", MEDIUM: "中", LOW: "低", INFO: "信息"},
+  task: {quick: "快速检查", harden: "漏洞", files: "文件", system: "系统", ai: "AI 代理", logs: "日志", winlog: "Windows 日志", alerts: "实时监控"},
+  desc: {quick: "系统审计、AI 代理审计，并扫描下载、桌面和 Temp 文件夹", harden: "薄弱的系统设置、账户问题、过期的更新、浏览器劫持", files: "用特征码和启发式方法扫描文件夹中的恶意软件",
+         system: "自启动项、安全设置、进程、计划任务、端口", ai: "暴露的模型服务器、有风险的代理配置、项目中的提示注入",
+         logs: "auth.log 或 nginx/apache 日志中的暴力破解和 Web 攻击", winlog: "登录失败、新用户、新服务、审计日志被清除"},
+  score: "评分", idleTitle: "尚未检查", idleText: "运行快速检查，了解这台电脑的状态。",
+  okTitle: "您已受到保护", okText: "目前运行的检查未发现威胁。",
+  warnTitle: "需要注意", warnText: "有些设置或文件值得查看。",
+  badTitle: "发现威胁", badText: "打开发现列表，先处理红色项目。",
+  busyTitle: "正在检查…", run: "运行", running: "运行中…", never: "尚未运行", clean: "干净", lastRun: "上次运行：{}",
+  recent: "最重要的发现", showAll: "查看全部", export: "导出 JSON",
+  emptyB: "这里还没有内容", emptyT: "运行检查后，结果会显示在这里。", cleanB: "一切正常", cleanT: "这项检查没有发现问题。",
+  where: "位置", evidence: "证据", advice: "处理建议", rule: "规则", toQuarantine: "移入隔离区",
+  qConfirm: "将此文件移入隔离区？", qDone: "已移入隔离区", pickPath: "路径：",
+  wsHint: "选择项目文件夹以检查提示注入（取消 = 仅检查配置和端口）",
+  error: "错误", unsupported: "仅限 Windows", alert: "实时监控：检测到更改", done: "{}：{} 项发现",
+  guardH: "实时监控", guardD: "监控代理和 MCP 配置、Shell 配置文件、SSH 密钥、hosts、自启动项和开放端口。",
+  guardOn: "实时监控已开启", guardOff: "实时监控已关闭", watching: "正在监控 {} 个文件", accept: "信任当前状态", accepted: "已将当前状态保存为可信状态",
+  acceptD: "在您自己做出更改后，将当前状态保存为新的可信基线。", events: "事件", noEvents: "未检测到更改", noEventsT: "监控开启期间，警报会显示在这里。",
+  qEmptyB: "隔离区为空", qEmptyT: "特征码匹配的文件可以移到这里。", restore: "恢复", del: "删除",
+  delConfirm: "永久删除此文件？此操作无法撤销。", restored: "已恢复到 {}", deleted: "已删除",
+  shield: "开启后，下载文件夹和桌面上的新文件以及新接入的 U 盘会立即被扫描。",  canaryH: "勒索软件诱饵",  canaryD: "放在文档和图片文件夹中的隐藏诱饵文档。一旦被改写或删除，您会收到严重警报。",  ignore: "忽略此发现",  ignoredDone: "已隐藏该发现",  ignoredH: "已忽略的发现",  ignoredN: "已隐藏的发现：{}",  clearIgnored: "重新显示",
+  protection: "防护",  pAv: "实时杀毒（Defender）",  pFw: "防火墙",  pGuard: "实时监控",  pCanary: "勒索软件诱饵",  pAuto: "随 Windows 启动",  pSigs: "恶意软件特征码",  on: "开启",  off: "关闭",  unknown: "未知",  activity: "最近活动",  noActivity: "还没有任何活动",  actAlert: "实时监控：{} 处更改",  autoH: "随 Windows 启动",  autoD: "登录时 hexward 会在后台启动并保持实时监控开启。警报以 Windows 通知的形式出现；关闭此窗口不会停止防护。",  quitH: "退出 hexward",  quitD: "停止后台防护，直到下次启动。",  quit: "退出",  stopped: "hexward 已停止。您可以关闭此窗口。",
+  language: "语言", langNote: "发现的说明和建议目前仍为英文。", about: "关于",
+  aboutT: "hexward 是一套开源安全工具。它是对 Microsoft Defender 等实时杀毒软件的补充，而不是替代。"
+}};
+
+const ICONS = {
+  overview: '<rect x="3" y="3" width="7" height="9" rx="1.500"/><rect x="14" y="3" width="7" height="5" rx="1.500"/><rect x="14" y="12" width="7" height="9" rx="1.500"/><rect x="3" y="16" width="7" height="5" rx="1.500"/>',
+  checks: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  findings: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.500 6h.010M3.500 12h.010M3.500 18h.010"/>',
+  guard: '<path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  quarantine: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  quick: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  harden: '<path d="M12 3l8 3v6c0 4.500-3.200 7.900-8 9-4.800-1.100-8-4.500-8-9V6z"/><path d="M12 8v5M12 16h.010"/>',
+  files: '<path d="M3 7a2 2 0 012-2h4l2 3h8a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  system: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  ai: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9 13v1M15 13v1M2 13h3M19 13h3"/>',
+  logs: '<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M9 8h3"/>',
+  winlog: '<path d="M3 5l8-1v7H3zM13 4l8-1v8h-8zM3 13h8v7l-8-1zM13 13h8v8l-8-1z"/>'
+};
+const PAGES = ["overview", "checks", "findings", "guard", "quarantine", "settings"];
+const CHECKS = ["quick", "harden", "files", "system", "ai", "logs", "winlog"];
+const SEV = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
+const WEIGHT = {CRITICAL: 40, HIGH: 20, MEDIUM: 7, LOW: 2, INFO: 0};
+const $ = id => document.getElementById(id);
+let stopped = false, S = null, T = I18N.en, page = "overview", tab = null, lastRev = -1, lastAlerts = 0, lastBusy = false, Q = null;
+const open = new Set();
+
+// Every dynamic string is inserted with textContent: log data is attacker-controlled.
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+function icon(name) { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", "i"); s.setAttribute("viewBox", "0 0 24 24"); s.innerHTML = ICONS[name]; return s; }
+function tr(key, ...a) { const s = T[key] ?? I18N.en[key] ?? key; if (!a.length) return s; const parts = s.split("{}"); return parts.map((p, i) => p + (i < a.length ? a[i] : "")).join(""); }
+async function api(path, body) {
+  const opt = body === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)};
+  return (await fetch("api/" + path, opt)).json();
+}
+function toast(text) { const t = $("toast"); t.textContent = text; t.classList.add("show"); clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), 3600); }
+function counts(list) { const c = {}; for (const f of list) c[f.severity] = (c[f.severity] || 0) + 1; return c; }
+function allFindings() { return Object.values(S.runs).flatMap(r => r.findings); }
+function when(at) { try { return new Date(at * 1000).toLocaleString(S.lang, {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}); } catch (e) { return ""; } }
+function go(p) { page = p; open.clear(); if (p === "quarantine") loadQ(); render(); document.querySelector(".body").scrollTop = 0; }
+function chips(parent, list) {
+  const c = counts(list.filter(f => f.severity !== "INFO")), present = SEV.filter(s => c[s]);
+  if (!present.length) parent.append(el("span", "chip c-ok", T.clean));
+  for (const s of present) parent.append(el("span", "chip c-" + s, String(c[s])));
+}
+function empty(b, t) { const e = el("div", "empty"); e.append(el("b", null, b), document.createTextNode(t)); return e; }
+
+function row(f, scope) {
+  const key = scope + ":" + f.id, w = el("div", "row" + (open.has(key) ? " open" : ""));
+  const head = el("button");
+  head.append(el("span", "sev c-" + f.severity, T.sev[f.severity]), el("span", "ttl", (f.time ? f.time + "  " : "") + f.title), el("span", "tgt", f.target || ""), el("span", "chev", "›"));
+  head.onclick = () => { open.has(key) ? open.delete(key) : open.add(key); w.classList.toggle("open"); };
+  const d = el("div", "det");
+  if (f.target) d.append(el("h4", null, T.where), el("pre", null, f.target));
+  if (f.evidence.length) d.append(el("h4", null, T.evidence), el("pre", null, f.evidence.map(e => "• " + e).join("\n")));
+  if (f.advice) d.append(el("h4", null, T.advice), el("div", "adv", f.advice));
+  d.append(el("h4", null, T.rule), el("pre", null, f.rule));
+  if (f.quarantinable) {
+    const q = el("button", "btn danger sm", T.toQuarantine);
+    q.onclick = async () => {
+      if (!confirm(T.qConfirm + "\n\n" + f.target)) return;
+      const r = await api("quarantine", {task: scope, id: f.id});
+      toast(r.ok ? T.qDone : T.error + ": " + r.error); Q = null; poll();
+    };
+    d.append(q);
+  }
+  const ig = el("button", "btn sec sm", T.ignore); ig.style.marginLeft = f.quarantinable ? "8px" : "0";
+  ig.onclick = async () => { const r = await api("ignore", {task: scope, id: f.id}); if (r.ok) toast(T.ignoredDone); poll(); };
+  d.append(ig);
+  w.append(head, d); return w;
+}
+
+const VIEWS = {
+  overview(root) {
+    const all = allFindings(), c = counts(all), ran = Object.keys(S.runs).length > 0;
+    const state = !ran ? "idle" : (c.CRITICAL || c.HIGH) ? "bad" : c.MEDIUM ? "warn" : "ok";
+    const score = Math.max(0, 100 - all.reduce((n, f) => n + WEIGHT[f.severity], 0));
+    const color = {idle: "var(--dim)", ok: "var(--ok)", warn: "var(--warn)", bad: "var(--bad)"}[state];
+    const cols = el("div", "cols"), st = el("div", "card status"); st.style.setProperty("--st", S.busy ? "var(--accent)" : color);
+    const ring = el("div", "ring" + (S.busy ? " busy" : ""));
+    const off = S.busy ? 225 : ran ? 301.6 * (1 - score / 100) : 301.6;
+    ring.innerHTML = '<svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="48" fill="none" stroke-width="8"/><circle class="arc" cx="60" cy="60" r="48" fill="none" stroke-width="8" stroke-dasharray="301.6" stroke-dashoffset="' + off + '"/></svg>';
+    const num = el("div", "num"), inner = el("div"); inner.append(el("b", null, S.busy ? "…" : ran ? String(score) : "–"), el("span", null, T.score)); num.append(inner); ring.append(num);
+    const txt = el("div");
+    txt.append(el("h2", null, S.busy ? T.busyTitle : T[state + "Title"]),
+               el("p", null, S.busy ? T.task[S.task] : S.error ? T.error + ": " + S.error : T[state + "Text"]));
+    const b = el("button", "btn"); b.append(icon("quick"), el("span", null, T.task.quick)); b.disabled = S.busy; b.onclick = () => run("quick");
+    txt.append(b); st.append(ring, txt);
+    const right = el("div"); right.style.cssText = "display:flex;flex-direction:column;gap:10px";
+    const stats = el("div", "stats");
+    for (const s of ["CRITICAL", "HIGH", "MEDIUM", "LOW"]) { const x = el("div", "stat"); x.append(el("b", null, String(c[s] || 0)), el("span", "c-" + s, T.sev[s])); stats.append(x); }
+    const g = el("button", "card gcard"); g.style.padding = "14px 16px";
+    const gt = el("div", "txt"); gt.append(el("h3", null, T.guardH), el("p", null, S.watch.on ? tr("watching", S.watch.files) : T.guardOff));
+    g.append(gt, el("span", "switch" + (S.watch.on ? " on" : ""))); g.onclick = toggleGuard;
+    right.append(stats, g); cols.append(st, right); root.append(cols);
+
+    const duo = el("div", "duo"), prot = el("div", "card"), act = el("div", "card");
+    prot.append(el("h3", null, T.protection));
+    const item = (label, value, target, optional) => {
+      const r = el(target ? "button" : "div", "prow"), l = el("span", "lbl", label);
+      const known = value === true || value === false;
+      r.append(l, el("span", "state" + (value === true ? " good" : value === false && !optional ? " bad" : ""), known ? (value ? T.on : T.off) : value == null ? T.unknown : String(value)));
+      if (target) r.onclick = () => go(target);
+      prot.append(r);
+    };
+    item(T.pAv, S.info.defender); item(T.pFw, S.info.firewall);
+    item(T.pGuard, S.watch.on, "guard"); item(T.pCanary, S.canary, "guard", true); item(T.pAuto, S.info.autostart, "settings", true);
+    item(T.pSigs, String(S.info.sigs));
+    act.append(el("h3", null, T.activity));
+    if (!S.activity.length) act.append(empty(T.noActivity, ""));
+    for (const a of S.activity.slice(0, 6)) {
+      const r = el("div", "arow"), d = el("span", "d");
+      if (a.worst) d.style.background = "var(--" + ({CRITICAL: "crit", HIGH: "high", MEDIUM: "med", LOW: "low", INFO: "info"}[a.worst]) + ")"; else d.style.background = "var(--ok)";
+      r.append(d, el("span", "t", a.kind === "alert" ? tr("actAlert", a.count) : tr("done", T.task[a.task] || a.task, a.count)), el("time", null, when(a.at)));
+      act.append(r);
+    }
+    duo.append(prot, act); root.append(duo);
+
+    const top = Object.entries(S.runs).flatMap(([name, r]) => r.findings.map(f => [name, f])).filter(p => p[1].severity !== "INFO")
+      .sort((a, b) => SEV.indexOf(a[1].severity) - SEV.indexOf(b[1].severity)).slice(0, 5);
+    const h = el("div", "sec-h"); h.append(el("h3", null, T.recent));
+    if (all.length) { const l = el("button", "link", T.showAll + " ›"); l.onclick = () => go("findings"); h.append(l); }
+    const list = el("div", "card listcard");
+    if (!ran) list.append(empty(T.emptyB, T.emptyT)); else if (!top.length) list.append(empty(T.cleanB, T.okText));
+    else for (const [name, f] of top) list.append(row(f, name));
+    root.append(h, list);
+  },
+
+  checks(root) {
+    const grid = el("div", "grid");
+    for (const name of CHECKS) {
+      const r = S.runs[name], off = (name === "winlog" || name === "harden") && !S.windows, running = S.busy && S.task === name;
+      const c = el("div", "card check" + (running ? " running" : ""));
+      const ic = el("div", "ico"); ic.append(icon(name));
+      const foot = el("div", "foot"), meta = el("div", "meta");
+      if (off) meta.append(el("span", null, T.unsupported)); else if (r) { chips(meta, r.findings); meta.append(el("span", null, when(r.at))); } else meta.append(el("span", null, T.never));
+      const b = el("button", "btn sm" + (name === "quick" ? "" : " sec"), running ? T.running : T.run);
+      b.disabled = S.busy || off; b.onclick = () => run(name);
+      foot.append(meta, b); c.append(ic, el("h3", null, T.task[name]), el("p", null, T.desc[name]), foot); grid.append(c);
+    }
+    root.append(grid);
+  },
+
+  findings(root) {
+    const tabs = Object.keys(S.runs).sort((a, b) => S.runs[b].at - S.runs[a].at);
+    if (!tab || !tabs.includes(tab)) tab = tabs[0] || null;
+    const card = el("div", "card listcard");
+    if (!tab) { card.append(empty(T.emptyB, T.emptyT)); root.append(card); return; }
+    const bar = el("div", "bar");
+    for (const name of tabs) { const b = el("button", "tab" + (name === tab ? " sel" : ""), T.task[name] + " · " + S.runs[name].findings.length); b.onclick = () => { tab = name; open.clear(); render(); }; bar.append(b); }
+    const items = S.runs[tab].findings;
+    bar.append(el("span", "spacer"));
+    if (items.length) { const a = el("a", "btn sec sm", T.export); a.href = "api/report?task=" + encodeURIComponent(tab); bar.append(a); }
+    card.append(bar);
+    if (!items.length) card.append(empty(T.cleanB, T.cleanT));
+    for (const f of [...items].sort((a, b) => SEV.indexOf(a.severity) - SEV.indexOf(b.severity))) card.append(row(f, tab));
+    for (const n of S.runs[tab].notes) card.append(el("div", "note", n));
+    root.append(card);
+  },
+
+  guard(root) {
+    const g = el("div", "card gcard"), gt = el("div", "txt");
+    gt.append(el("h3", null, S.watch.on ? T.guardOn : T.guardOff), el("p", null, S.watch.error || (S.watch.on ? tr("watching", S.watch.files) + ". " : "") + T.guardD + " " + T.shield));
+    const sw = el("button", "switch" + (S.watch.on ? " on" : "")); sw.onclick = toggleGuard; g.append(gt, sw);
+    const a = el("div", "card gcard"), at = el("div", "txt"); at.append(el("h3", null, T.accept), el("p", null, T.acceptD));
+    const ab = el("button", "btn sec sm", T.accept); ab.onclick = async () => { const r = await api("baseline", {}); toast(r.ok ? T.accepted : T.error + ": " + r.error); poll(); };
+    a.append(at, ab);
+    const cn = el("div", "card gcard"), ct = el("div", "txt"); ct.append(el("h3", null, T.canaryH), el("p", null, T.canaryD));
+    const cs = el("button", "switch" + (S.canary ? " on" : "")); cs.onclick = async () => { await api("canary", {on: !S.canary}); poll(); };
+    cn.append(ct, cs);
+    const h = el("div", "sec-h"); h.append(el("h3", null, T.events + (S.alerts.length ? " · " + S.alerts.length : "")));
+    const list = el("div", "card listcard");
+    if (!S.alerts.length) list.append(empty(T.noEvents, T.noEventsT)); else { for (const f of S.alerts) list.append(row(f, "alerts")); }
+    if (S.alerts.length) { const x = el("a", "link", T.export); x.href = "api/report?task=alerts"; h.append(x); }
+    root.append(g, cn, a, h, list);
+  },
+
+  quarantine(root) {
+    const card = el("div", "card listcard");
+    if (!Q) { loadQ(); root.append(card); return; }
+    if (!Q.length) card.append(empty(T.qEmptyB, T.qEmptyT));
+    for (const it of Q) {
+      const r = el("div", "qrow"), info = el("div", "info");
+      info.append(el("div", null, it.path), el("div", "sub", it.time + " · " + it.reason));
+      const rb = el("button", "btn sec sm", T.restore), db = el("button", "btn danger sm", T.del);
+      rb.onclick = async () => { const x = await api("qrestore", {id: it.id}); toast(x.ok ? tr("restored", x.path) : T.error + ": " + x.error); loadQ(); };
+      db.onclick = async () => { if (!confirm(T.delConfirm + "\n\n" + it.path)) return; const x = await api("qdelete", {id: it.id}); toast(x.ok ? T.deleted : T.error + ": " + x.error); loadQ(); };
+      r.append(info, rb, db); card.append(r);
+    }
+    root.append(card);
+  },
+
+  settings(root) {
+    const c = el("div", "card"); c.append(el("h3", null, T.language));
+    const box = el("div", "langs");
+    for (const [code, name] of Object.entries(LANGS)) {
+      const b = el("button", "lang" + (code === S.lang ? " sel" : ""), name);
+      b.onclick = async () => { await api("settings", {lang: code}); poll(); };
+      box.append(b);
+    }
+    const note = el("p", "small", T.langNote); note.style.marginTop = "12px"; c.append(box, note);
+    const au = el("div", "card gcard"), aut = el("div", "txt"); aut.append(el("h3", null, T.autoH), el("p", null, T.autoD));
+    const asw = el("button", "switch" + (S.info.autostart ? " on" : ""));
+    asw.onclick = async () => { const r = await api("autostart", {on: !S.info.autostart}); if (!r.ok) toast(T.error + ": " + r.error); poll(); };
+    au.append(aut, asw); root.append(au);
+    const ic = el("div", "card gcard"), it = el("div", "txt"); it.append(el("h3", null, T.ignoredH), el("p", null, tr("ignoredN", S.ignored)));
+    const ib = el("button", "btn sec sm", T.clearIgnored); ib.disabled = !S.ignored; ib.onclick = async () => { await api("unignore", {}); poll(); };
+    ic.append(it, ib); root.prepend(c); root.append(ic);
+    if (S.info.persistent) {
+      const qc = el("div", "card gcard"), qt = el("div", "txt"); qt.append(el("h3", null, T.quitH), el("p", null, T.quitD));
+      const qb = el("button", "btn danger sm", T.quit);
+      qb.onclick = async () => { await api("quit", {}); stopped = true; $("page").replaceChildren(empty(T.quitH, T.stopped)); };
+      qc.append(qt, qb); root.append(qc);
+    }
+    const a = el("div", "card"); a.append(el("h3", null, T.about + " · hexward " + S.version));
+    const p = el("p", "small", T.aboutT); p.style.marginTop = "6px"; a.append(p);
+    root.append(a);
+  }
+};
+
+function render() {
+  T = I18N[S.lang] || I18N.en;
+  document.documentElement.lang = S.lang;
+  const all = allFindings(), c = counts(all), nav = $("nav"); nav.replaceChildren();
+  for (const p of PAGES) {
+    const b = el("button", p === page ? "sel" : ""); b.append(icon(p), el("span", null, T.nav[p]));
+    const n = p === "findings" ? all.filter(f => f.severity !== "INFO").length : p === "guard" ? S.alerts.length : 0;
+    if (n) b.append(el("span", "badge" + ((p === "findings" && (c.CRITICAL || c.HIGH)) || p === "guard" ? " hot" : ""), String(n)));
+    b.onclick = () => go(p); nav.append(b);
+  }
+  $("gstat").classList.toggle("on", S.watch.on);
+  $("gstatText").textContent = S.watch.on ? T.guardOn : T.guardOff;
+  $("ver").textContent = "v" + S.version;
+  $("title").textContent = T.nav[page]; $("subtitle").textContent = T.sub[page];
+  const root = $("page"), fresh = root.dataset.page !== page;
+  root.replaceChildren(); root.dataset.page = page;
+  root.style.animation = fresh ? "" : "none";
+  VIEWS[page](root);
+}
+async function toggleGuard() { await api("watch", {on: !S.watch.on}); poll(); }
+async function loadQ() { Q = (await api("quarantine")).items; if (page === "quarantine") render(); }
+async function run(task) {
+  if (!S || S.busy) return;
+  let path = null;
+  if (task === "files" || task === "logs" || task === "ai") {
+    if (task === "ai") toast(T.wsHint);
+    const p = await api("pick", {kind: task === "logs" ? "file" : "dir"});
+    path = p.manual ? prompt(T.pickPath) : p.path;
+    if (!path && task !== "ai") return;
+  }
+  const r = await api("run", {task, path});
+  if (!r.ok) toast(T.error + ": " + r.error);
+  poll();
+}
+async function poll() {
+  if (stopped) return;
+  let s;
+  try { s = await api("state?rev=" + lastRev); } catch (e) { return; }  // server gone: the app was closed
+  if (!s.runs) return;  // nothing changed since lastRev
+  const first = !S; S = s;
+  if (!first && s.alerts.length > lastAlerts) { T = I18N[s.lang] || I18N.en; toast(T.alert); page = "guard"; }
+  if (!first && lastBusy && !s.busy && !s.error && s.runs[s.task]) {
+    T = I18N[s.lang] || I18N.en; toast(tr("done", T.task[s.task], s.runs[s.task].findings.length));
+    if (page === "checks") { page = "findings"; tab = s.task; }
+  }
+  lastRev = s.rev; lastAlerts = s.alerts.length; lastBusy = s.busy;
+  render();
+}
+(function loop() { poll().finally(() => setTimeout(loop, document.hidden ? 3000 : 700)); })();
+addEventListener("pagehide", () => navigator.sendBeacon("api/bye"));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+</script>
+</body>
+</html>

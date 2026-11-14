@@ -1,0 +1,36 @@
+name: release
+
+# Push a tag like v0.1.0 to build the Windows application and publish a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install . pytest pyinstaller
+      - run: pytest -q
+      - name: Build executables
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --name hexward --icon src/hexward/hexward.ico --add-data "src/hexward/hexward.ico;hexward" --add-data "src/hexward/ui.html;hexward" packaging/gui_app.py
+          pyinstaller --noconfirm --onefile --console --name hexward-cli --icon src/hexward/hexward.ico packaging/cli_app.py
+      - name: Checksums
+        shell: pwsh
+        run: Get-FileHash dist/*.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Set-Content dist/SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/hexward.exe
+            dist/hexward-cli.exe
+            dist/SHA256SUMS.txt
+          # 0.x versions and tags with a suffix (v1.0.0-rc1) are published as pre-releases
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') || contains(github.ref_name, '-') }}
+          generate_release_notes: true
